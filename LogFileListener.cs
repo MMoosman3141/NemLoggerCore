@@ -8,7 +8,8 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace NemLoggerCore {
-  public class LogFileListener : TraceListener {
+  public sealed class LogFileListener : TraceListener {
+    private const string DEFAULT_MESSAGE = "Default Log Message";
     private readonly BlockingCollection<string> _logQueue = new BlockingCollection<string>();
     private readonly Task _writeTask;
 
@@ -69,7 +70,7 @@ namespace NemLoggerCore {
     /// Destructor, used to ensure that file handles are properly disposed of.
     /// </summary>
     ~LogFileListener() {
-      Dispose();
+      Dispose(false);
     }
 
     /// <summary>
@@ -77,7 +78,7 @@ namespace NemLoggerCore {
     /// </summary>
     /// <param name="o">The object to write to the file.</param>
     public override void Write(object o) {
-      Write(o.ToString(), "");
+      Write(o?.ToString() ?? DEFAULT_MESSAGE, "");
     }
 
     /// <summary>
@@ -86,7 +87,7 @@ namespace NemLoggerCore {
     /// <param name="o">The object to write to the file.</param>
     /// <param name="category">The category to write to the file.</param>
     public override void Write(object o, string category) {
-      Write(o.ToString(), category);
+      Write(o?.ToString() ?? DEFAULT_MESSAGE, category);
     }
 
     /// <summary>
@@ -140,7 +141,7 @@ namespace NemLoggerCore {
     /// </summary>
     /// <param name="o">The object to write to the log file.</param>
     public override void WriteLine(object o) {
-      WriteLine(o.ToString(), "");
+      WriteLine(o?.ToString() ?? DEFAULT_MESSAGE, "");
     }
 
     /// <summary>
@@ -149,7 +150,7 @@ namespace NemLoggerCore {
     /// <param name="o">The object to write to the log file.</param>
     /// <param name="category">The category to write to the log file.</param>
     public override void WriteLine(object o, string category) {
-      WriteLine(o.ToString(), category);
+      WriteLine(o?.ToString() ?? DEFAULT_MESSAGE, category);
     }
 
     /// <summary>
@@ -166,7 +167,7 @@ namespace NemLoggerCore {
     /// <param name="message">The message to write to the log file.</param>
     /// <param name="category">The category to write to the log file.</param>
     public override void WriteLine(string message, string category) {
-      string writeMessage = $"{message.Trim()}{Environment.NewLine}";
+      string writeMessage = $"{message?.Trim() ?? DEFAULT_MESSAGE}{Environment.NewLine}";
 
       Write(writeMessage, category);
     }
@@ -182,8 +183,7 @@ namespace NemLoggerCore {
       _logQueue.CompleteAdding();
       _writeTask.Wait();
       IncludeDateTime = false;
-      LogFilename = "";      
-      GC.SuppressFinalize(this);
+      LogFilename = "";
     }
 
     private async Task WriteLogDataAsync() {
@@ -191,7 +191,7 @@ namespace NemLoggerCore {
         using FileStream fileStream = new FileStream(LogFilename, FileMode.Create, FileAccess.Write, FileShare.Read);
         using StreamWriter streamWriter = new StreamWriter(fileStream, Encoding.UTF8) { AutoFlush = true };
         while (_logQueue.TryTake(out string logValue)) {
-          await streamWriter.WriteAsync(logValue);
+          await streamWriter.WriteAsync(logValue).ConfigureAwait(true);
         }
       } catch (Exception) {
         throw;
