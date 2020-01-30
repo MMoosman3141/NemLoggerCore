@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29709.97
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NemFileLogger", "NemFileLogger.csproj", "{6503A7F8-8D08-4C6F-B982-EF24C0C83583}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTestNemFileLogger", "..\UnitTestNemFileLogger\UnitTestNemFileLogger.csproj", "{ADCDD109-852D-443F-83D0-67A3A297A593}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6503A7F8-8D08-4C6F-B982-EF24C0C83583}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6503A7F8-8D08-4C6F-B982-EF24C0C83583}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6503A7F8-8D08-4C6F-B982-EF24C0C83583}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6503A7F8-8D08-4C6F-B982-EF24C0C83583}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ADCDD109-852D-443F-83D0-67A3A297A593}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ADCDD109-852D-443F-83D0-67A3A297A593}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ADCDD109-852D-443F-83D0-67A3A297A593}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ADCDD109-852D-443F-83D0-67A3A297A593}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {4477DCC2-E47B-453D-B21F-3D3554EE4C8F}
+	EndGlobalSection
+EndGlobal
