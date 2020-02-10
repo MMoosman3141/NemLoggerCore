@@ -1,10 +1,13 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace NemLoggerCore {
@@ -14,6 +17,9 @@ namespace NemLoggerCore {
     private readonly Task _writeTask;
 
     public override bool IsThreadSafe { get; } = true;
+
+    public string KeyValueDelimiter { get; set; } = ":";
+    public string MessageDelimiter { get; set; } = Environment.NewLine;
 
     /// <summary>
     /// Should messages writen to the log file include a prefixed date and time value.
@@ -104,36 +110,57 @@ namespace NemLoggerCore {
     /// <param name="message">The message to write to the log file.</param>
     /// <param name="category">The category to write to the log file.</param>
     public override void Write(string message, string category) {
+      Dictionary<string, string> keyValues = new Dictionary<string, string>();
       //Assemble the message to be logged.
-      StringBuilder logMessage = new StringBuilder();
+      string tempMsg = Regex.Replace(message, @"\\""", "&quot;", RegexOptions.Compiled);
+      tempMsg = Regex.Replace(tempMsg, $@"""(.*?){Environment.NewLine}(.*?)""", "\"$1&nl;$2\"");
+      tempMsg = Regex.Replace(tempMsg, $@"""(.*?){MessageDelimiter}(.*?)""", "\"$1&msgDel;$2\"");
+      tempMsg = Regex.Replace(tempMsg, $@"""(.*?){KeyValueDelimiter}(.*?)""", "\"$1&keyValDel;$2\"");
+
 
       if (IncludeDateTime) {
-        logMessage.Append($"{DateTime.Now} - ");
+        keyValues.Add("dateTime", $"{DateTime.Now}");
       }
 
       if (!string.IsNullOrWhiteSpace(category)) {
-        logMessage.Append($"{category.Trim()} - ");
+        keyValues.Add("category", category.Trim());
       }
 
       if (!string.IsNullOrWhiteSpace(message)) {
-        logMessage.Append(message);
-      }
+        string[] messageLines = tempMsg.Split(MessageDelimiter, StringSplitOptions.RemoveEmptyEntries);
 
-      //Indent each line of the logMessage according to the indentLevel and indentSize
-      if (IndentLevel > 0) {
-        string indent = new string(' ', IndentLevel * IndentSize);
+        StringBuilder logMsg = new StringBuilder();
+        foreach(string line in messageLines) {
+          if(line.Contains(KeyValueDelimiter)) {
+            string[] keyValue = line.Split(KeyValueDelimiter, StringSplitOptions.RemoveEmptyEntries);
+            string key = keyValue[0].Trim().Trim('"')
+              .Replace("&quot;", "\"", StringComparison.InvariantCulture)
+              .Replace("&ln;", Environment.NewLine, StringComparison.InvariantCulture)
+              .Replace("&msgDel;", MessageDelimiter, StringComparison.InvariantCulture)
+              .Replace("&keyValDel;", KeyValueDelimiter, StringComparison.InvariantCulture);
+            string value = keyValue[1].Trim().Trim('"')
+              .Replace("&quot;", "\"", StringComparison.InvariantCulture)
+              .Replace("&ln;", Environment.NewLine, StringComparison.InvariantCulture)
+              .Replace("&msgDel;", MessageDelimiter, StringComparison.InvariantCulture)
+              .Replace("&keyValDel;", KeyValueDelimiter, StringComparison.InvariantCulture);
 
-        string[] lines = logMessage.ToString().Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
-        for (int index = 0; index < lines.Length; index++) {
-          if (!string.IsNullOrWhiteSpace(lines[index])) {
-            lines[index] = $"{indent}{lines[index]}";
+            keyValues.Add(key, value);
+          } else {
+            string msgValue = line.Trim().Trim('"')
+              .Replace("&quot;", "\"", StringComparison.InvariantCulture)
+              .Replace("&ln;", Environment.NewLine, StringComparison.InvariantCulture)
+              .Replace("&msgDel;", MessageDelimiter, StringComparison.InvariantCulture)
+              .Replace("&keyValDel;", KeyValueDelimiter, StringComparison.InvariantCulture);
+            logMsg.AppendLine(msgValue);
           }
         }
 
-        logMessage = new StringBuilder(string.Join(Environment.NewLine, lines));
+        keyValues.Add("message", logMsg.ToString());
       }
 
-      _logQueue.Add(logMessage.ToString());
+
+
+      _logQueue.Add(JsonConvert.SerializeObject(keyValues));
     }
 
     /// <summary>
@@ -184,6 +211,10 @@ namespace NemLoggerCore {
       _writeTask.Wait();
       IncludeDateTime = false;
       LogFilename = "";
+    }
+
+    public static string GenerateLogString(Dictionary<string, string> keyValuePairs) {
+      
     }
 
     private async Task WriteLogDataAsync() {
